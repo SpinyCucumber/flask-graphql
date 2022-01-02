@@ -16,7 +16,7 @@ QueryRootType = GraphQLObjectType(
         'context': GraphQLField(GraphQLNonNull(GraphQLString),
                                 resolver=lambda obj, info: info.context),
         'test': GraphQLField(
-            type=GraphQLString,
+            type_=GraphQLString,
             args={
                 'who': GraphQLArgument(GraphQLString)
             },
@@ -29,7 +29,7 @@ MutationRootType = GraphQLObjectType(
     name='MutationRoot',
     fields={
         'writeTest': GraphQLField(
-            type=QueryRootType,
+            type_=QueryRootType,
             resolver=lambda *_: QueryRootType
         )
     }
