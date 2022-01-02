@@ -3,7 +3,6 @@ from functools import partial
 from flask import Response, request
 from flask.views import View
 
-from graphql.type.schema import GraphQLSchema
 from graphql_server import (HttpQueryError, default_format_error,
                             encode_execution_results, json_encode,
                             load_json_body, run_http_query)
@@ -27,12 +26,9 @@ class GraphQLView(View):
     methods = ['GET', 'POST', 'PUT', 'DELETE']
 
     def __init__(self, **kwargs):
-        super(GraphQLView, self).__init__()
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-
-        assert isinstance(self.schema, GraphQLSchema), 'A Schema is required to be provided to GraphQLView.'
 
     # noinspection PyUnusedLocal
     def get_root_value(self):
@@ -40,6 +36,9 @@ class GraphQLView(View):
 
     def get_context(self):
         return request
+    
+    def get_schema(self):
+        return self.schema
 
     def get_middleware(self):
         return self.middleware
@@ -62,7 +61,7 @@ class GraphQLView(View):
     format_error = staticmethod(default_format_error)
     encode = staticmethod(json_encode)
 
-    def dispatch_request(self):
+    def dispatch_request(self, schema=None, context=None, root_value=None, backend=None):
         try:
             request_method = request.method.lower()
             data = self.parse_body()
@@ -80,17 +79,17 @@ class GraphQLView(View):
                 extra_options['executor'] = executor
 
             execution_results, all_params = run_http_query(
-                self.schema,
+                schema or self.get_schema(),
                 request_method,
                 data,
                 query_data=request.args,
                 batch_enabled=self.batch,
                 catch=catch,
-                backend=self.get_backend(),
+                backend=backend or self.get_backend(),
 
                 # Execute options
-                root=self.get_root_value(),
-                context=self.get_context(),
+                root=root_value or self.get_root_value(),
+                context=context or self.get_context(),
                 middleware=self.get_middleware(),
                 **extra_options
             )
